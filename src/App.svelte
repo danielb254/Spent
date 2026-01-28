@@ -9,6 +9,7 @@
   import Overview from './lib/Overview.svelte';
   import Analytics from './lib/Analytics.svelte';
   import QuickEntry from './lib/QuickEntry.svelte';
+  import EditTransaction from './lib/EditTransaction.svelte';
   import CommandPalette from './lib/CommandPalette.svelte';
   import CategoryManager from './lib/CategoryManager.svelte';
 
@@ -22,6 +23,8 @@
 
   let activeTab: 'overview' | 'analytics' = 'overview';
   let showQuickEntry = false;
+  let showEditTransaction = false;
+  let editingTransaction: Transaction | null = null;
   let showCommandPalette = false;
   let showCategoryManager = false;
   let monthlyBalance = 0;
@@ -92,6 +95,28 @@
       await loadData();
     } catch (error) {
       console.error('Failed to delete transaction:', error);
+    }
+  }
+
+  function handleEditTransaction(event: CustomEvent) {
+    editingTransaction = event.detail.transaction;
+    showEditTransaction = true;
+  }
+
+  async function handleUpdateTransaction(event: CustomEvent) {
+    const { id, amount, description, category } = event.detail;
+    try {
+      await invoke('update_transaction', {
+        id,
+        amount,
+        description,
+        category,
+      });
+      await loadData();
+      showEditTransaction = false;
+      editingTransaction = null;
+    } catch (error) {
+      console.error('Failed to update transaction:', error);
     }
   }
 
@@ -214,7 +239,7 @@
           class="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 transition-colors text-xs"
         >
           <Github size={14} />
-          <span>v0.1.0</span>
+          <span>v0.1.1</span>
         </a>
         <button
           on:click={handleExport}
@@ -235,6 +260,7 @@
         {selectedMonth}
         {availableMonths}
         on:delete={handleDeleteTransaction}
+        on:edit={handleEditTransaction}
         on:refresh={loadData}
         on:monthChange={(e) => selectedMonth = e.detail.month}
       />
@@ -260,6 +286,17 @@
   {#if showCategoryManager}
     <CategoryManager
       on:close={() => (showCategoryManager = false)}
+    />
+  {/if}
+
+  {#if showEditTransaction && editingTransaction}
+    <EditTransaction
+      transaction={editingTransaction}
+      on:save={handleUpdateTransaction}
+      on:close={() => {
+        showEditTransaction = false;
+        editingTransaction = null;
+      }}
     />
   {/if}
 </main>

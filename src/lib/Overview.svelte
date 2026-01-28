@@ -160,11 +160,11 @@
     </div>
 
     <div class="grid grid-cols-2 gap-4">
-      <div class="bg-gray-950 rounded-xl p-6 border-2 border-blue-500/30 shadow-lg hover:border-blue-500/50 hover:scale-[1.02] transition-all duration-300 ease-out relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none"></div>
+      <div class="bg-gray-950 rounded-xl p-6 border-2 {monthlyBalance >= 0 ? 'border-blue-500/30 hover:border-blue-500/50' : 'border-red-500/30 hover:border-red-500/50'} shadow-lg hover:scale-[1.02] transition-all duration-300 ease-out relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br {monthlyBalance >= 0 ? 'from-blue-500/5' : 'from-red-500/5'} to-transparent pointer-events-none"></div>
         <div class="relative">
           <p class="text-gray-500 text-xs font-medium mb-3 uppercase tracking-wider">{formatMonthLabel(selectedMonth)}</p>
-          <p class="text-5xl font-black text-white tracking-tight mb-1" style="font-feature-settings: 'tnum';">
+          <p class="text-5xl font-black tracking-tight mb-1 {monthlyBalance >= 0 ? 'text-white' : 'text-red-400'}" style="font-feature-settings: 'tnum';">
             {formatCurrency(monthlyBalance)}
           </p>
           <div class="flex items-center gap-2 mt-3">
@@ -179,11 +179,11 @@
         </div>
       </div>
 
-      <div class="bg-gray-950 rounded-xl p-6 border-2 border-purple-500/30 shadow-lg hover:border-purple-500/50 hover:scale-[1.02] transition-all duration-300 ease-out relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none"></div>
+      <div class="bg-gray-950 rounded-xl p-6 border-2 {allTimeBalance >= 0 ? 'border-purple-500/30 hover:border-purple-500/50' : 'border-red-500/30 hover:border-red-500/50'} shadow-lg hover:scale-[1.02] transition-all duration-300 ease-out relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br {allTimeBalance >= 0 ? 'from-purple-500/5' : 'from-red-500/5'} to-transparent pointer-events-none"></div>
         <div class="relative">
           <p class="text-gray-500 text-xs font-medium mb-3 uppercase tracking-wider">All Time</p>
-          <p class="text-5xl font-black text-white tracking-tight mb-1" style="font-feature-settings: 'tnum';">
+          <p class="text-5xl font-black tracking-tight mb-1 {allTimeBalance >= 0 ? 'text-white' : 'text-red-400'}" style="font-feature-settings: 'tnum';">
             {formatCurrency(allTimeBalance)}
           </p>
           <div class="flex items-center gap-2 mt-3">
@@ -236,9 +236,18 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                      <p class="text-lg font-mono {transaction.amount >= 0 ? 'text-green-400' : 'text-white'}" style="font-feature-settings: 'tnum';">
+                      <p class="text-lg font-mono {transaction.amount >= 0 ? 'text-green-400' : 'text-red-400'}" style="font-feature-settings: 'tnum';">
                         {transaction.amount >= 0 ? '+' : ''}{formatCurrency(transaction.amount)}
                       </p>
+                      <button
+                        on:click={() => dispatch('edit', { transaction })}
+                        class="opacity-0 group-hover:opacity-100 p-2 hover:bg-blue-500/10 hover:scale-110 rounded-lg text-blue-400 transition-all duration-200"
+                        title="Edit"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
                       <button
                         on:click={() => dispatch('delete', { id: transaction.id })}
                         class="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/10 hover:scale-110 rounded-lg text-red-400 transition-all duration-200"

@@ -1,6 +1,6 @@
 {
   "name": "spent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A minimalist, local-first personal finance tracker",
   "type": "module",
   "scripts": {

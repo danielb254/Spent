@@ -96,6 +96,18 @@ fn get_category_totals_for_month(month: String, db: tauri::State<Arc<Database>>)
     db.get_category_totals_for_month(month).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn update_transaction(
+    id: i64,
+    amount: i64,
+    description: String,
+    category: String,
+    db: tauri::State<Arc<Database>>,
+) -> Result<Transaction, String> {
+    db.update_transaction(id, amount, description, category)
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -125,7 +137,8 @@ fn main() {
             get_available_months,
             get_balance_for_month,
             get_transactions_for_month,
-            get_category_totals_for_month
+            get_category_totals_for_month,
+            update_transaction
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

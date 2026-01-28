@@ -121,6 +121,37 @@ impl Database {
         transactions.collect()
     }
 
+    pub fn update_transaction(
+        &self,
+        id: i64,
+        amount: i64,
+        description: String,
+        category: String,
+    ) -> Result<Transaction> {
+        let conn = self.conn.lock().unwrap();
+        
+        conn.execute(
+            "UPDATE transactions SET amount = ?1, description = ?2, category = ?3 WHERE id = ?4",
+            [&amount.to_string(), &description, &category, &id.to_string()],
+        )?;
+
+        let transaction = conn.query_row(
+            "SELECT id, amount, description, category, date FROM transactions WHERE id = ?1",
+            [id],
+            |row| {
+                Ok(Transaction {
+                    id: row.get(0)?,
+                    amount: row.get(1)?,
+                    description: row.get(2)?,
+                    category: row.get(3)?,
+                    date: row.get(4)?,
+                })
+            },
+        )?;
+
+        Ok(transaction)
+    }
+
     pub fn get_monthly_balance(&self) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         let current_month = chrono::Local::now().format("%Y-%m").to_string();

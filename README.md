@@ -2,6 +2,8 @@
 
 Minimalist personal finance tracker for Linux desktop.
 
+![Spent UI](src-tauri/icons/Media-1.png)
+
 ## Features
 
 - Offline-first with local SQLite storage

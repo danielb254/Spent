@@ -44,7 +44,6 @@ jobs:
         with:
           files: |
             src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/appimage/*.AppImage
           draft: false
           prerelease: false
         env:

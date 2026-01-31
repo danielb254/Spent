@@ -16,11 +16,11 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: spent_amd64.deb
             artifact_path: src-tauri/target/release/bundle/deb/*.deb
-            appimage_path: src-tauri/target/release/bundle/appimage/*.AppImage
+            appimage_path: src-tauri/target/release/bundle/appimage/*.AppImage*
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: spent_x64-setup.exe
-            artifact_path: src-tauri/target/release/bundle/nsis/*.exe
+            artifact_path: src-tauri/target/release/bundle/nsis/*setup*.exe
           - platform: macos-latest
             target: x86_64-apple-darwin
             artifact_name: spent.app.tar.gz
@@ -108,7 +108,7 @@ jobs:
       - name: Archive macOS app
         if: matrix.platform == 'macos-latest'
         run: |
-          cd src-tauri/target/release/bundle/macos
+          cd src-tauri/target/${{ matrix.target }}/release/bundle/macos
           tar -czf spent.app.tar.gz *.app
 
       - name: Upload macOS artifact
@@ -116,7 +116,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spent-macos-${{ matrix.target }}
-          path: src-tauri/target/release/bundle/macos/spent.app.tar.gz
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/macos/spent.app.tar.gz
 
   release:
     needs: build

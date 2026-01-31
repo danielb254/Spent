@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
 
   const dispatch = createEventDispatcher();
 
@@ -12,11 +13,7 @@
   }>;
 
   function formatCurrency(cents: number): string {
-    const dollars = cents / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(dollars);
+    return formatCurrencyHelper(cents, $currencySettings);
   }
 
   function formatDate(dateString: string): string {

@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { Search, Plus, Download, TrendingUp, Receipt, Tag, Wallet } from 'lucide-svelte';
+  import { Search, Plus, Download, TrendingUp, Receipt, Tag, Wallet, Upload, Settings } from 'lucide-svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -11,8 +11,10 @@
 
   const commands = [
     { id: 'add', label: 'Add Transaction', icon: Plus, action: 'add' },
+    { id: 'import', label: 'Import from CSV', icon: Upload, action: 'import' },
     { id: 'categories', label: 'Manage Categories', icon: Tag, action: 'categories' },
     { id: 'containers', label: 'Manage Containers', icon: Wallet, action: 'containers' },
+    { id: 'settings', label: 'Settings', icon: Settings, action: 'settings' },
     { id: 'export', label: 'Export to CSV', icon: Download, action: 'export' },
     { id: 'analytics', label: 'View Analytics', icon: TrendingUp, action: 'analytics' },
     { id: 'transactions', label: 'View Transactions', icon: Receipt, action: 'transactions' },

@@ -2,6 +2,7 @@ use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
+use csv::ReaderBuilder;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Container {
@@ -445,5 +446,163 @@ impl Database {
         )?;
 
         Ok(container)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImportedTransaction {
+    pub amount: String,
+    pub description: String,
+    pub category: String,
+    pub date: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImportResult {
+    pub success_count: usize,
+    pub error_count: usize,
+    pub errors: Vec<String>,
+}
+
+impl Database {
+    pub fn import_transactions_from_csv(
+        &self,
+        csv_content: String,
+        container_id: i64,
+        amount_column: usize,
+        description_column: usize,
+        category_column: usize,
+        date_column: usize,
+        skip_header: bool,
+    ) -> Result<ImportResult> {
+        let mut reader = ReaderBuilder::new()
+            .has_headers(skip_header)
+            .from_reader(csv_content.as_bytes());
+
+        let mut success_count = 0;
+        let mut error_count = 0;
+        let mut errors = Vec::new();
+
+        for (index, result) in reader.records().enumerate() {
+            let row_num = if skip_header { index + 2 } else { index + 1 };
+            
+            match result {
+                Ok(record) => {
+                    let amount_str = record.get(amount_column).unwrap_or("").trim();
+                    let description = record.get(description_column).unwrap_or("Imported").trim().to_string();
+                    let category = record.get(category_column).unwrap_or("Other").trim().to_string();
+                    let date_str = record.get(date_column).unwrap_or("").trim();
+
+                    let amount_cents = match Self::parse_amount(amount_str) {
+                        Ok(amt) => amt,
+                        Err(e) => {
+                            errors.push(format!("Row {}: Invalid amount '{}' - {}", row_num, amount_str, e));
+                            error_count += 1;
+                            continue;
+                        }
+                    };
+
+                    let parsed_date = match Self::parse_date(date_str) {
+                        Ok(date) => date,
+                        Err(e) => {
+                            errors.push(format!("Row {}: Invalid date '{}' - {}", row_num, date_str, e));
+                            error_count += 1;
+                            continue;
+                        }
+                    };
+
+                    match self.insert_imported_transaction(
+                        container_id,
+                        amount_cents,
+                        description,
+                        category,
+                        parsed_date,
+                    ) {
+                        Ok(_) => success_count += 1,
+                        Err(e) => {
+                            errors.push(format!("Row {}: Failed to insert - {}", row_num, e));
+                            error_count += 1;
+                        }
+                    }
+                }
+                Err(e) => {
+                    errors.push(format!("Row {}: Failed to parse CSV - {}", row_num, e));
+                    error_count += 1;
+                }
+            }
+        }
+
+        Ok(ImportResult {
+            success_count,
+            error_count,
+            errors,
+        })
+    }
+
+    fn parse_amount(amount_str: &str) -> Result<i64, String> {
+        let cleaned = amount_str
+            .replace("$", "")
+            .replace("€", "")
+            .replace("£", "")
+            .replace(",", "")
+            .trim()
+            .to_string();
+
+        match cleaned.parse::<f64>() {
+            Ok(amount) => Ok((amount * 100.0).round() as i64),
+            Err(_) => Err(format!("Cannot parse as number")),
+        }
+    }
+
+    fn parse_date(date_str: &str) -> Result<String, String> {
+        let formats = vec![
+            "%Y-%m-%d",
+            "%m/%d/%Y",
+            "%d/%m/%Y",
+            "%Y/%m/%d",
+            "%m-%d-%Y",
+            "%d-%m-%Y",
+            "%Y-%m-%d %H:%M:%S",
+            "%m/%d/%Y %H:%M",
+        ];
+
+        for format in formats {
+            if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S") {
+                return Ok(parsed.format("%Y-%m-%d %H:%M:%S").to_string());
+            }
+            if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(date_str, format) {
+                return Ok(parsed.format("%Y-%m-%d %H:%M:%S").to_string());
+            }
+            if let Ok(parsed) = chrono::NaiveDate::parse_from_str(date_str, format) {
+                let datetime = parsed.and_hms_opt(0, 0, 0).unwrap();
+                return Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string());
+            }
+        }
+
+        Err("Unsupported date format".to_string())
+    }
+
+    fn insert_imported_transaction(
+        &self,
+        container_id: i64,
+        amount: i64,
+        description: String,
+        category: String,
+        date: String,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        
+        conn.execute(
+            "INSERT INTO transactions (amount, description, category, date, container_id) VALUES (?1, ?2, ?3, ?4, ?5)",
+            [
+                &amount.to_string(),
+                &description,
+                &category,
+                &date,
+                &container_id.to_string(),
+            ],
+        )?;
+
+        Ok(())
     }
 }

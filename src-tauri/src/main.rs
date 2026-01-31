@@ -131,6 +131,34 @@ fn update_container(id: i64, name: String, db: tauri::State<Arc<Database>>) -> R
     db.update_container(id, name).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn import_csv(
+    csv_content: String,
+    container_id: i64,
+    amount_column: usize,
+    description_column: usize,
+    category_column: usize,
+    date_column: usize,
+    skip_header: bool,
+    db: tauri::State<Arc<Database>>,
+) -> Result<serde_json::Value, String> {
+    let result = db.import_transactions_from_csv(
+        csv_content,
+        container_id,
+        amount_column,
+        description_column,
+        category_column,
+        date_column,
+        skip_header,
+    ).map_err(|e| e.to_string())?;
+    
+    Ok(serde_json::json!({
+        "success_count": result.success_count,
+        "error_count": result.error_count,
+        "errors": result.errors,
+    }))
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -165,7 +193,8 @@ fn main() {
             get_containers,
             add_container,
             delete_container,
-            update_container
+            update_container,
+            import_csv
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

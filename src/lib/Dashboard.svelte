@@ -1,12 +1,10 @@
 <script lang="ts">
+  import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
+  
   export let balance: number;
 
   function formatCurrency(cents: number): string {
-    const dollars = cents / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(dollars);
+    return formatCurrencyHelper(cents, $currencySettings);
   }
 
   $: balanceColor = balance >= 0 ? 'text-green-400' : 'text-red-400';

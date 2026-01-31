@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fade, fly, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
   import { 
     TrendingDown, 
     TrendingUp, 
@@ -35,11 +36,7 @@
   }>;
 
   function formatCurrency(cents: number): string {
-    const dollars = Math.abs(cents) / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(dollars);
+    return formatCurrencyHelper(cents, $currencySettings);
   }
 
   function formatDate(dateString: string): string {

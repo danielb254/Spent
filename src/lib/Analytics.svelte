@@ -2,17 +2,14 @@
   import { PieChart, TrendingDown, Package } from 'lucide-svelte';
   import { fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
 
   export let categoryTotals: Array<[string, number]>;
   export let transactions: Array<any>;
   export let monthlyBalance: number;
 
   function formatCurrency(cents: number): string {
-    const dollars = Math.abs(cents) / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(dollars);
+    return formatCurrencyHelper(cents, $currencySettings);
   }
 
   function getCategoryColor(index: number): string {

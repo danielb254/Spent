@@ -14,6 +14,8 @@
   import CommandPalette from './lib/CommandPalette.svelte';
   import CategoryManager from './lib/CategoryManager.svelte';
   import ContainerManager from './lib/ContainerManager.svelte';
+  import ImportCSV from './lib/ImportCSV.svelte';
+  import Settings from './lib/Settings.svelte';
   import Dropdown from './lib/Dropdown.svelte';
   import Toast from './lib/Toast.svelte';
 
@@ -40,6 +42,8 @@
   let showCommandPalette = false;
   let showCategoryManager = false;
   let showContainerManager = false;
+  let showImportCSV = false;
+  let showSettings = false;
   let monthlyBalance = 0;
   let allTimeBalance = 0;
   let transactions: Transaction[] = [];
@@ -210,6 +214,12 @@
       case 'containers':
         showContainerManager = true;
         break;
+      case 'import':
+        showImportCSV = true;
+        break;
+      case 'settings':
+        showSettings = true;
+        break;
       case 'export':
         handleExport();
         break;
@@ -236,6 +246,8 @@
       showCommandPalette = false;
       showCategoryManager = false;
       showContainerManager = false;
+      showImportCSV = false;
+      showSettings = false;
     }
   }
 
@@ -401,6 +413,20 @@
         showEditTransaction = false;
         editingTransaction = null;
       }}
+    />
+  {/if}
+
+  {#if showImportCSV && selectedContainer}
+    <ImportCSV
+      containerId={selectedContainer.id}
+      on:imported={loadData}
+      on:close={() => (showImportCSV = false)}
+    />
+  {/if}
+
+  {#if showSettings}
+    <Settings
+      on:close={() => (showSettings = false)}
     />
   {/if}
 

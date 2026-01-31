@@ -1,11 +1,12 @@
 {
   "name": "spent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A minimalist, local-first personal finance tracker",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "sync-version": "node scripts/sync-version.js",
+    "dev": "npm run sync-version && vite",
+    "build": "npm run sync-version && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "check": "svelte-check --tsconfig ./tsconfig.json"

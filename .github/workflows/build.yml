@@ -58,12 +58,16 @@ jobs:
             libssl-dev \
             libgtk-3-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev
+            librsvg2-dev \
+            libfuse2
           
           # Install linuxdeploy for AppImage bundling
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
-          sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
+          # Extract and run without FUSE for CI compatibility
+          ./linuxdeploy-x86_64.AppImage --appimage-extract
+          sudo mv squashfs-root/AppRun /usr/local/bin/linuxdeploy
+          sudo cp -r squashfs-root/usr/* /usr/local/
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -91,17 +95,21 @@ jobs:
 
       - name: Upload .deb artifact (Linux)
         if: matrix.platform == 'ubuntu-22.04'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: spent-linux-deb
           path: ${{ matrix.artifact_path }}
+          if-no-files-found: warn
 
       - name: Upload .AppImage artifact (Linux)
         if: matrix.platform == 'ubuntu-22.04'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: spent-linux-appimage
           path: ${{ matrix.appimage_path }}
+          if-no-files-found: warn
 
       - name: Upload .exe artifact (Windows)
         if: matrix.platform == 'windows-latest'

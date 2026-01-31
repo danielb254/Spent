@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+import { readFileSync, writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const rootDir = join(__dirname, '..');
+
+const packageJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
+const version = packageJson.version;
+
+console.log(`Syncing version to ${version}...`);
+
+const tauriConfPath = join(rootDir, 'src-tauri', 'tauri.conf.json');
+const tauriConf = JSON.parse(readFileSync(tauriConfPath, 'utf-8'));
+tauriConf.version = version;
+writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n');
+
+const cargoTomlPath = join(rootDir, 'src-tauri', 'Cargo.toml');
+let cargoToml = readFileSync(cargoTomlPath, 'utf-8');
+cargoToml = cargoToml.replace(/^version = ".*"$/m, `version = "${version}"`);
+writeFileSync(cargoTomlPath, cargoToml);

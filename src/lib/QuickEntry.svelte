@@ -236,14 +236,14 @@
 
 <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-gray-900 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl overflow-visible">
-    <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-5 flex items-center justify-between rounded-t-2xl">
+    <div class="bg-gradient-to-r {transactionType === 'expense' ? 'from-red-600 to-red-700' : 'from-green-600 to-green-700'} px-6 py-5 flex items-center justify-between rounded-t-2xl">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
           <DollarSign class="text-white" size={20} />
         </div>
         <div>
           <h3 class="text-xl font-bold text-white">Quick Entry</h3>
-          <p class="text-red-100 text-xs">Add a transaction</p>
+          <p class="{transactionType === 'expense' ? 'text-red-100' : 'text-green-100'} text-xs">Add a transaction</p>
         </div>
       </div>
       <button

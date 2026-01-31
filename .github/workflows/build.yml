@@ -187,11 +187,15 @@ jobs:
           SHA256=$(curl -sL "https://github.com/FrogSnot/Spent/archive/v${{ steps.get_version.outputs.VERSION }}.tar.gz" | sha256sum | awk '{print $1}')
           sed -i "s/^sha256sums=.*/sha256sums=('$SHA256')/" PKGBUILD
       
+      - name: Install makepkg dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pacman-package-manager
+      
       - name: Generate .SRCINFO
-        uses: Morganamilo/actions-makepkg@v2
-        with:
-          pkgdir: AUR
-          command: makepkg --printsrcinfo > .SRCINFO
+        run: |
+          cd AUR
+          makepkg --printsrcinfo > .SRCINFO
       
       - name: Publish to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.0

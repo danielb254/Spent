@@ -8,6 +8,13 @@ Minimalist personal finance tracker for Linux desktop with cross-platform suppor
 
 > **Note:** Version 1.0.0 is "feature-complete" but has primarily been tested on Arch Linux. If you encounter issues on other distros or OSs, please open an Issue!
 
+[![AUR votes](https://img.shields.io/aur/votes/spent?logo=arch-linux&style=flat-square&color=blue)](https://aur.archlinux.org/packages/spent)
+[![GitHub stars](https://img.shields.io/github/stars/FrogSnot/Spent?style=flat-square&color=yellow)](https://github.com/FrogSnot/Spent)
+![Tauri](https://img.shields.io/badge/Tauri-FFC131?style=flat-square&logo=tauri&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
+![Svelte](https://img.shields.io/badge/Svelte-FF3E00?style=flat-square&logo=svelte&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+
 ## Features
 
 - **Containers**: Create separate balance containers to manage personal, business, or different accounts in complete isolation

@@ -12,7 +12,6 @@ Minimalist, local-first personal finance application for Linux desktop with cros
 ## Architecture
 - All data stored in local SQLite database
 - No cloud sync, no accounts required
-- Target: Under 20MB RAM, under 10MB binary
 
 ## Key Features
 - Offline operation

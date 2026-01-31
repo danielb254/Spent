@@ -4,6 +4,7 @@
   import { backOut } from 'svelte/easing';
   import { invoke } from '@tauri-apps/api/core';
   import { X, DollarSign, Plus, Trash2 } from 'lucide-svelte';
+  import Dropdown from './Dropdown.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -90,6 +91,12 @@
   onMount(() => {
     loadCategories();
   });
+
+  $: categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+
+  function handleCategoryChange(event: CustomEvent) {
+    category = event.detail.value;
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -114,7 +121,6 @@
       </button>
     </div>
 
-    <!-- Form -->
     <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-5">
       <div>
         <label for="amount" class="block text-sm font-semibold text-gray-300 mb-2">
@@ -130,7 +136,7 @@
             step="0.01"
             bind:value={amount}
             placeholder="0.00"
-            class="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-lg font-semibold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            class="w-full pl-10 pr-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl text-white text-lg font-semibold placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all"
             autofocus
             required
           />
@@ -154,7 +160,7 @@
       <div>
         <div class="flex items-center justify-between mb-2">
           <label for="category" class="block text-sm font-semibold text-gray-300">
-            Category <span class="text-gray-600 font-normal">(optional)</span>
+            Category
           </label>
           <button
             type="button"
@@ -173,7 +179,7 @@
                 type="text"
                 bind:value={newCategoryName}
                 placeholder="Enter category name..."
-                class="flex-1 px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 bg-gray-900 border-2 border-gray-600 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500"
                 on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
               />
               <button
@@ -187,27 +193,22 @@
           </div>
         {/if}
 
-        <div class="relative">
-          <select
-            id="category"
-            bind:value={category}
-            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+        <Dropdown
+          value={category}
+          options={categoryOptions}
+          on:change={handleCategoryChange}
+        />
+        {#if categories.length > 8 && !['Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities', 'Healthcare', 'Income', 'Other'].includes(category)}
+          <button
+            type="button"
+            on:click={() => handleDeleteCategory(category)}
+            class="mt-2 px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all text-sm flex items-center gap-1.5"
+            title="Delete custom category"
           >
-            {#each categories as cat}
-              <option value={cat}>{cat}</option>
-            {/each}
-          </select>
-          {#if categories.length > 8 && !['Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities', 'Healthcare', 'Income', 'Other'].includes(category)}
-            <button
-              type="button"
-              on:click={() => handleDeleteCategory(category)}
-              class="absolute right-12 top-1/2 -translate-y-1/2 p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
-              title="Delete custom category"
-            >
-              <Trash2 size={14} />
-            </button>
-          {/if}
-        </div>
+            <Trash2 size={14} />
+            <span>Delete "{category}"</span>
+          </button>
+        {/if}
       </div>
 
       <div class="flex gap-3 pt-2">
@@ -234,7 +235,7 @@
 </div>
 
 <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-  <div class="bg-gray-900 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl overflow-hidden">
+  <div class="bg-gray-900 rounded-2xl w-full max-w-md border border-gray-800 shadow-2xl overflow-visible">
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
@@ -253,13 +254,12 @@
       </button>
     </div>
 
-    <!-- Form -->
-    <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-5">
-      <div>
+    <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-5 overflow-visible">
+      <div class="overflow-visible">
         <label class="block text-sm font-semibold text-gray-300 mb-2">
           Type *
         </label>
-        <div class="flex gap-2">
+        <div class="flex gap-2 p-1">
           <button
             type="button"
             on:click={() => (transactionType = 'expense')}
@@ -310,23 +310,19 @@
           type="text"
           bind:value={description}
           placeholder="Coffee, groceries, salary..."
-          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          class="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all"
         />
       </div>
 
       <div>
         <label for="category" class="block text-sm font-semibold text-gray-300 mb-2">
-          Category <span class="text-gray-600 font-normal">(optional)</span>
+          Category
         </label>
-        <select
-          id="category"
-          bind:value={category}
-          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
-        >
-          {#each categories as cat}
-            <option value={cat}>{cat}</option>
-          {/each}
-        </select>
+        <Dropdown
+          value={category}
+          options={categoryOptions}
+          on:change={handleCategoryChange}
+        />
       </div>
 
       <div class="flex gap-3 pt-2">

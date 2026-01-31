@@ -4,6 +4,7 @@
   import { backOut } from 'svelte/easing';
   import { invoke } from '@tauri-apps/api/core';
   import { X, DollarSign, Edit } from 'lucide-svelte';
+  import Dropdown from './Dropdown.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -68,6 +69,12 @@
     loadCategories();
     initializeForm();
   });
+
+  $: categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+
+  function handleCategoryChange(event: CustomEvent) {
+    category = event.detail.value;
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -92,12 +99,12 @@
       </button>
     </div>
 
-    <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-5">
-      <div>
+    <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-5 overflow-visible">
+      <div class="overflow-visible">
         <label class="block text-sm font-semibold text-gray-300 mb-3">
           Type
         </label>
-        <div class="flex gap-2">
+        <div class="flex gap-2 p-1">
           <button
             type="button"
             on:click={() => transactionType = 'expense'}
@@ -129,7 +136,7 @@
             step="0.01"
             bind:value={amount}
             placeholder="0.00"
-            class="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-lg font-semibold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            class="w-full pl-10 pr-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl text-white text-lg font-semibold placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all"
             required
           />
         </div>
@@ -144,7 +151,7 @@
           type="text"
           bind:value={description}
           placeholder="Coffee, groceries, salary..."
-          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+          class="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all"
         />
       </div>
 
@@ -152,16 +159,11 @@
         <label for="category" class="block text-sm font-semibold text-gray-300 mb-2">
           Category
         </label>
-        <select
-          id="category"
-          bind:value={category}
-          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all cursor-pointer appearance-none"
-          style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27white%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em 1.25em;"
-        >
-          {#each categories as cat}
-            <option value={cat} class="bg-gray-800 text-white">{cat}</option>
-          {/each}
-        </select>
+        <Dropdown
+          value={category}
+          options={categoryOptions}
+          on:change={handleCategoryChange}
+        />
       </div>
 
       <div class="flex gap-3 pt-2">

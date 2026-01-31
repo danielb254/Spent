@@ -1,6 +1,6 @@
 [package]
 name = "spent"
-version = "0.1.1"
+version = "1.0.0"
 description = "A minimalist, local-first personal finance tracker"
 authors = ["you"]
 edition = "2021"

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0",
   "productName": "Spent",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "identifier": "com.spent.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -22,7 +22,21 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "description": "Main application capabilities",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "dialog:allow-save",
+            "dialog:default",
+            "fs:allow-write-text-file",
+            "shell:allow-open"
+          ]
+        }
+      ]
     }
   },
   "bundle": {
@@ -42,6 +56,18 @@
       "deb": {
         "depends": []
       }
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
     }
   }
 }

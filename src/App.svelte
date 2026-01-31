@@ -5,13 +5,17 @@
   import { invoke } from '@tauri-apps/api/core';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
-  import { LayoutDashboard, TrendingUp, Plus, Settings, Github } from 'lucide-svelte';
+  import { open } from '@tauri-apps/plugin-shell';
+  import { LayoutDashboard, TrendingUp, Plus, Settings, Github, Wallet } from 'lucide-svelte';
   import Overview from './lib/Overview.svelte';
   import Analytics from './lib/Analytics.svelte';
   import QuickEntry from './lib/QuickEntry.svelte';
   import EditTransaction from './lib/EditTransaction.svelte';
   import CommandPalette from './lib/CommandPalette.svelte';
   import CategoryManager from './lib/CategoryManager.svelte';
+  import ContainerManager from './lib/ContainerManager.svelte';
+  import Dropdown from './lib/Dropdown.svelte';
+  import Toast from './lib/Toast.svelte';
 
   interface Transaction {
     id: number;
@@ -19,6 +23,14 @@
     description: string;
     category: string;
     date: string;
+    container_id: number;
+  }
+
+  interface Container {
+    id: number;
+    name: string;
+    created_at: string;
+    is_default: boolean;
   }
 
   let activeTab: 'overview' | 'analytics' = 'overview';
@@ -27,21 +39,40 @@
   let editingTransaction: Transaction | null = null;
   let showCommandPalette = false;
   let showCategoryManager = false;
+  let showContainerManager = false;
   let monthlyBalance = 0;
   let allTimeBalance = 0;
   let transactions: Transaction[] = [];
   let categoryTotals: Array<[string, number]> = [];
   let availableMonths: string[] = [];
   let selectedMonth: string = '';
+  let containers: Container[] = [];
+  let selectedContainer: Container | null = null;
+  let toastMessage = '';
+  let toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
+  let showToast = false;
 
   function getCurrentMonth() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  async function loadAvailableMonths() {
+  async function loadContainers() {
     try {
-      const months = await invoke<string[]>('get_available_months');
+      containers = await invoke<Container[]>('get_containers');
+      if (containers.length > 0 && !selectedContainer) {
+        selectedContainer = containers.find(c => c.is_default) || containers[0];
+      }
+    } catch (error) {
+      console.error('Failed to load containers:', error);
+    }
+  }
+
+  async function loadAvailableMonths() {
+    if (!selectedContainer) return;
+    
+    try {
+      const months = await invoke<string[]>('get_available_months', { containerId: selectedContainer.id });
       availableMonths = months.length > 0 ? months : [getCurrentMonth()];
       if (!selectedMonth) {
         selectedMonth = getCurrentMonth();
@@ -54,17 +85,19 @@
   }
 
   async function loadData() {
+    if (!selectedContainer) return;
+    
     try {
       if (selectedMonth === getCurrentMonth()) {
-        monthlyBalance = await invoke<number>('get_monthly_balance');
-        transactions = await invoke<Transaction[]>('get_transactions', { limit: 50 });
-        categoryTotals = await invoke<Array<[string, number]>>('get_category_totals');
+        monthlyBalance = await invoke<number>('get_monthly_balance', { containerId: selectedContainer.id });
+        transactions = await invoke<Transaction[]>('get_transactions', { containerId: selectedContainer.id, limit: 50 });
+        categoryTotals = await invoke<Array<[string, number]>>('get_category_totals', { containerId: selectedContainer.id });
       } else {
-        monthlyBalance = await invoke<number>('get_balance_for_month', { month: selectedMonth });
-        transactions = await invoke<Transaction[]>('get_transactions_for_month', { month: selectedMonth, limit: 50 });
-        categoryTotals = await invoke<Array<[string, number]>>('get_category_totals_for_month', { month: selectedMonth });
+        monthlyBalance = await invoke<number>('get_balance_for_month', { containerId: selectedContainer.id, month: selectedMonth });
+        transactions = await invoke<Transaction[]>('get_transactions_for_month', { containerId: selectedContainer.id, month: selectedMonth, limit: 50 });
+        categoryTotals = await invoke<Array<[string, number]>>('get_category_totals_for_month', { containerId: selectedContainer.id, month: selectedMonth });
       }
-      allTimeBalance = await invoke<number>('get_all_time_balance');
+      allTimeBalance = await invoke<number>('get_all_time_balance', { containerId: selectedContainer.id });
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -74,13 +107,21 @@
     loadData();
   }
 
+  $: if (selectedContainer) {
+    loadAvailableMonths();
+    loadData();
+  }
+
   async function handleAddTransaction(event: CustomEvent) {
+    if (!selectedContainer) return;
+    
     const { amount, description, category } = event.detail;
     try {
       await invoke('add_transaction', {
         amount: Math.round(amount * 100),
         description: description || null,
         category: category || null,
+        containerId: selectedContainer.id,
       });
       await loadData();
       showQuickEntry = false;
@@ -121,10 +162,12 @@
   }
 
   async function handleExport() {
+    if (!selectedContainer) return;
+    
     try {
-      const csv = await invoke<string>('export_csv');
+      const csv = await invoke<string>('export_csv', { containerId: selectedContainer.id });
       const path = await save({
-        defaultPath: 'spent-export.csv',
+        defaultPath: `spent-${selectedContainer.name}-export.csv`,
         filters: [{
           name: 'CSV',
           extensions: ['csv']
@@ -133,9 +176,23 @@
       
       if (path) {
         await writeTextFile(path, csv);
+        toastMessage = `CSV exported successfully to:\n${path}`;
+        toastType = 'success';
+        showToast = true;
       }
     } catch (error) {
       console.error('Export failed:', error);
+      toastMessage = 'Failed to export CSV. Please try again.';
+      toastType = 'error';
+      showToast = true;
+    }
+  }
+
+  async function openGitHub() {
+    try {
+      await open('https://github.com/FrogSnot/Spent');
+    } catch (error) {
+      console.error('Failed to open GitHub:', error);
     }
   }
 
@@ -149,6 +206,9 @@
         break;
       case 'categories':
         showCategoryManager = true;
+        break;
+      case 'containers':
+        showContainerManager = true;
         break;
       case 'export':
         handleExport();
@@ -175,14 +235,36 @@
       showQuickEntry = false;
       showCommandPalette = false;
       showCategoryManager = false;
+      showContainerManager = false;
+    }
+  }
+
+  function handleContainerChange(event: CustomEvent) {
+    const containerId = event.detail.value as number;
+    selectedContainer = containers.find(c => c.id === containerId) || null;
+  }
+
+  $: containerOptions = containers.map(c => ({
+    value: c.id,
+    label: c.is_default ? `${c.name} (Default)` : c.name
+  }));
+
+  function handleContainerDeleted(event: CustomEvent) {
+    const deletedId = event.detail.id;
+    if (selectedContainer?.id === deletedId) {
+      selectedContainer = containers.find(c => c.is_default) || containers[0] || null;
     }
   }
 
   onMount(async () => {
+    await loadContainers();
     await loadAvailableMonths();
     await loadData();
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
+    
+    const handleKeydownEvent = (event: KeyboardEvent) => handleKeydown(event);
+    window.addEventListener('keydown', handleKeydownEvent);
+    
+    return () => window.removeEventListener('keydown', handleKeydownEvent);
   });
 </script>
 
@@ -192,6 +274,18 @@
       <h1 class="text-2xl font-black text-white tracking-tight">Spent</h1>
       <p class="text-xs text-gray-500 mt-1">Finance Tracker</p>
     </div>
+
+    {#if selectedContainer}
+      <div class="px-4 pt-4 pb-2">
+        <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Active Container</label>
+        <Dropdown
+          value={selectedContainer.id}
+          options={containerOptions}
+          icon={Wallet}
+          on:change={handleContainerChange}
+        />
+      </div>
+    {/if}
 
     <nav class="flex-1 p-4 space-y-1">
       <button
@@ -233,14 +327,13 @@
       </button>
       
       <div class="flex items-center justify-between px-2">
-        <a 
-          href="https://github.com/yourusername/spent" 
-          target="_blank"
-          class="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 transition-colors text-xs"
+        <button
+          on:click={openGitHub}
+          class="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 transition-colors text-xs hover:underline cursor-pointer"
         >
           <Github size={14} />
-          <span>v0.1.1</span>
-        </a>
+          <span>v1.0.0</span>
+        </button>
         <button
           on:click={handleExport}
           class="text-xs text-gray-500 hover:text-gray-300 transition-colors"
@@ -289,6 +382,17 @@
     />
   {/if}
 
+  {#if showContainerManager}
+    <ContainerManager
+      on:close={() => {
+        showContainerManager = false;
+        loadContainers();
+      }}
+      on:containerDeleted={handleContainerDeleted}
+      on:containerUpdated={loadContainers}
+    />
+  {/if}
+
   {#if showEditTransaction && editingTransaction}
     <EditTransaction
       transaction={editingTransaction}
@@ -297,6 +401,14 @@
         showEditTransaction = false;
         editingTransaction = null;
       }}
+    />
+  {/if}
+
+  {#if showToast}
+    <Toast
+      message={toastMessage}
+      type={toastType}
+      onClose={() => (showToast = false)}
     />
   {/if}
 </main>

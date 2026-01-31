@@ -4,12 +4,21 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Container {
+    pub id: i64,
+    pub name: String,
+    pub created_at: String,
+    pub is_default: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction {
     pub id: i64,
-    pub amount: i64, // Stored in cents
+    pub amount: i64,
     pub description: String,
     pub category: String,
     pub date: String,
+    pub container_id: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,6 +26,7 @@ pub struct NewTransaction {
     pub amount: i64,
     pub description: Option<String>,
     pub category: Option<String>,
+    pub container_id: i64,
 }
 
 pub struct Database {
@@ -28,15 +38,49 @@ impl Database {
         let conn = Connection::open(db_path)?;
         
         conn.execute(
+            "CREATE TABLE IF NOT EXISTS containers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                is_default INTEGER NOT NULL DEFAULT 0
+            )",
+            [],
+        )?;
+
+        let container_count: i64 = conn.query_row("SELECT COUNT(*) FROM containers", [], |row| row.get(0))?;
+        if container_count == 0 {
+            let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            conn.execute(
+                "INSERT INTO containers (name, created_at, is_default) VALUES (?1, ?2, 1)",
+                ["Personal", &now],
+            )?;
+        }
+
+        conn.execute(
             "CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 amount INTEGER NOT NULL,
                 description TEXT NOT NULL,
                 category TEXT NOT NULL,
-                date TEXT NOT NULL
+                date TEXT NOT NULL,
+                container_id INTEGER NOT NULL DEFAULT 1,
+                FOREIGN KEY (container_id) REFERENCES containers(id) ON DELETE CASCADE
             )",
             [],
         )?;
+
+        let has_container_id: Result<i64, _> = conn.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('transactions') WHERE name='container_id'",
+            [],
+            |row| row.get(0)
+        );
+        
+        if let Ok(0) = has_container_id {
+            conn.execute(
+                "ALTER TABLE transactions ADD COLUMN container_id INTEGER NOT NULL DEFAULT 1",
+                [],
+            )?;
+        }
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS categories (
@@ -80,12 +124,13 @@ impl Database {
         let category = transaction.category.unwrap_or_else(|| "Other".to_string());
         
         conn.execute(
-            "INSERT INTO transactions (amount, description, category, date) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO transactions (amount, description, category, date, container_id) VALUES (?1, ?2, ?3, ?4, ?5)",
             [
                 &transaction.amount.to_string(),
                 &description,
                 &category,
                 &date,
+                &transaction.container_id.to_string(),
             ],
         )?;
 
@@ -97,14 +142,15 @@ impl Database {
             description,
             category,
             date,
+            container_id: transaction.container_id,
         })
     }
 
-    pub fn get_transactions(&self, limit: Option<i64>) -> Result<Vec<Transaction>> {
+    pub fn get_transactions(&self, container_id: i64, limit: Option<i64>) -> Result<Vec<Transaction>> {
         let conn = self.conn.lock().unwrap();
         let query = match limit {
-            Some(l) => format!("SELECT id, amount, description, category, date FROM transactions ORDER BY date DESC LIMIT {}", l),
-            None => "SELECT id, amount, description, category, date FROM transactions ORDER BY date DESC".to_string(),
+            Some(l) => format!("SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} ORDER BY date DESC LIMIT {}", container_id, l),
+            None => format!("SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} ORDER BY date DESC", container_id),
         };
 
         let mut stmt = conn.prepare(&query)?;
@@ -115,6 +161,7 @@ impl Database {
                 description: row.get(2)?,
                 category: row.get(3)?,
                 date: row.get(4)?,
+                container_id: row.get(5)?,
             })
         })?;
 
@@ -136,7 +183,7 @@ impl Database {
         )?;
 
         let transaction = conn.query_row(
-            "SELECT id, amount, description, category, date FROM transactions WHERE id = ?1",
+            "SELECT id, amount, description, category, date, container_id FROM transactions WHERE id = ?1",
             [id],
             |row| {
                 Ok(Transaction {
@@ -145,6 +192,7 @@ impl Database {
                     description: row.get(2)?,
                     category: row.get(3)?,
                     date: row.get(4)?,
+                    container_id: row.get(5)?,
                 })
             },
         )?;
@@ -152,39 +200,39 @@ impl Database {
         Ok(transaction)
     }
 
-    pub fn get_monthly_balance(&self) -> Result<i64> {
+    pub fn get_monthly_balance(&self, container_id: i64) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         let current_month = chrono::Local::now().format("%Y-%m").to_string();
         
         let balance: i64 = conn.query_row(
-            "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE date LIKE ?1",
-            [format!("{}%", current_month)],
+            "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE container_id = ?1 AND date LIKE ?2",
+            [&container_id.to_string(), &format!("{}%", current_month)],
             |row| row.get(0),
         )?;
 
         Ok(balance)
     }
 
-    pub fn get_all_time_balance(&self) -> Result<i64> {
+    pub fn get_all_time_balance(&self, container_id: i64) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         
         let balance: i64 = conn.query_row(
-            "SELECT COALESCE(SUM(amount), 0) FROM transactions",
-            [],
+            "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE container_id = ?1",
+            [container_id],
             |row| row.get(0),
         )?;
 
         Ok(balance)
     }
 
-    pub fn export_transactions_csv(&self) -> Result<String> {
+    pub fn export_transactions_csv(&self, container_id: i64) -> Result<String> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, amount, description, category, date FROM transactions ORDER BY date DESC"
+            "SELECT id, amount, description, category, date FROM transactions WHERE container_id = ?1 ORDER BY date DESC"
         )?;
         
         let mut csv = String::from("ID,Amount,Description,Category,Date\n");
-        let rows = stmt.query_map([], |row| {
+        let rows = stmt.query_map([container_id], |row| {
             Ok((
                 row.get::<_, i64>(0)?,
                 row.get::<_, i64>(1)?,
@@ -209,19 +257,19 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_category_totals(&self) -> Result<Vec<(String, i64)>> {
+    pub fn get_category_totals(&self, container_id: i64) -> Result<Vec<(String, i64)>> {
         let conn = self.conn.lock().unwrap();
         let current_month = chrono::Local::now().format("%Y-%m").to_string();
         
         let mut stmt = conn.prepare(
             "SELECT category, SUM(amount) as total 
              FROM transactions 
-             WHERE date LIKE ?1 AND amount < 0
+             WHERE container_id = ?1 AND date LIKE ?2 AND amount < 0
              GROUP BY category 
              ORDER BY total ASC"
         )?;
         
-        let results = stmt.query_map([format!("{}%", current_month)], |row| {
+        let results = stmt.query_map([&container_id.to_string(), &format!("{}%", current_month)], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
         })?;
         
@@ -254,35 +302,36 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_available_months(&self) -> Result<Vec<String>> {
+    pub fn get_available_months(&self, container_id: i64) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT DISTINCT strftime('%Y-%m', date) as month 
              FROM transactions 
+             WHERE container_id = ?1
              ORDER BY month DESC"
         )?;
         
-        let months = stmt.query_map([], |row| row.get(0))?;
+        let months = stmt.query_map([container_id], |row| row.get(0))?;
         months.collect()
     }
 
-    pub fn get_balance_for_month(&self, month: String) -> Result<i64> {
+    pub fn get_balance_for_month(&self, container_id: i64, month: String) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         
         let balance: i64 = conn.query_row(
-            "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE date LIKE ?1",
-            [format!("{}%", month)],
+            "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE container_id = ?1 AND date LIKE ?2",
+            [&container_id.to_string(), &format!("{}%", month)],
             |row| row.get(0),
         )?;
 
         Ok(balance)
     }
 
-    pub fn get_transactions_for_month(&self, month: String, limit: Option<i64>) -> Result<Vec<Transaction>> {
+    pub fn get_transactions_for_month(&self, container_id: i64, month: String, limit: Option<i64>) -> Result<Vec<Transaction>> {
         let conn = self.conn.lock().unwrap();
         let base_query = format!(
-            "SELECT id, amount, description, category, date FROM transactions WHERE date LIKE '{}%' ORDER BY date DESC",
-            month
+            "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} AND date LIKE '{}%' ORDER BY date DESC",
+            container_id, month
         );
         
         let query = match limit {
@@ -298,26 +347,103 @@ impl Database {
                 description: row.get(2)?,
                 category: row.get(3)?,
                 date: row.get(4)?,
+                container_id: row.get(5)?,
             })
         })?;
 
         transactions.collect()
     }
 
-    pub fn get_category_totals_for_month(&self, month: String) -> Result<Vec<(String, i64)>> {
+    pub fn get_category_totals_for_month(&self, container_id: i64, month: String) -> Result<Vec<(String, i64)>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT category, SUM(amount) as total 
              FROM transactions 
-             WHERE amount < 0 AND date LIKE ?1
+             WHERE container_id = ?1 AND amount < 0 AND date LIKE ?2
              GROUP BY category 
              ORDER BY total ASC"
         )?;
 
-        let results = stmt.query_map([format!("{}%", month)], |row| {
+        let results = stmt.query_map([&container_id.to_string(), &format!("{}%", month)], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
         })?;
         
         results.collect()
+    }
+
+    pub fn get_containers(&self) -> Result<Vec<Container>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id, name, created_at, is_default FROM containers ORDER BY is_default DESC, created_at ASC")?;
+        
+        let containers = stmt.query_map([], |row| {
+            Ok(Container {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                created_at: row.get(2)?,
+                is_default: row.get::<_, i64>(3)? == 1,
+            })
+        })?;
+        
+        containers.collect()
+    }
+
+    pub fn add_container(&self, name: String) -> Result<Container> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        conn.execute(
+            "INSERT INTO containers (name, created_at, is_default) VALUES (?1, ?2, 0)",
+            [&name, &now],
+        )?;
+
+        let id = conn.last_insert_rowid();
+        
+        Ok(Container {
+            id,
+            name,
+            created_at: now,
+            is_default: false,
+        })
+    }
+
+    pub fn delete_container(&self, id: i64) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        
+        let is_default: i64 = conn.query_row(
+            "SELECT is_default FROM containers WHERE id = ?1",
+            [id],
+            |row| row.get(0),
+        )?;
+        
+        if is_default == 1 {
+            return Err(rusqlite::Error::InvalidParameterName("Cannot delete default container".to_string()));
+        }
+        
+        conn.execute("DELETE FROM containers WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    pub fn update_container(&self, id: i64, name: String) -> Result<Container> {
+        let conn = self.conn.lock().unwrap();
+        
+        conn.execute(
+            "UPDATE containers SET name = ?1 WHERE id = ?2",
+            [&name, &id.to_string()],
+        )?;
+
+        let container = conn.query_row(
+            "SELECT id, name, created_at, is_default FROM containers WHERE id = ?1",
+            [id],
+            |row| {
+                Ok(Container {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    created_at: row.get(2)?,
+                    is_default: row.get::<_, i64>(3)? == 1,
+                })
+            },
+        )?;
+
+        Ok(container)
     }
 }

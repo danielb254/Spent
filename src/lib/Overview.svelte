@@ -18,6 +18,7 @@
     Wallet,
     Infinity
   } from 'lucide-svelte';
+  import Dropdown from './Dropdown.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -65,7 +66,13 @@
     }).format(date);
   }
 
-  function groupTransactions(transactions: typeof transactions) {
+  function groupTransactions(txList: Array<{
+    id: number;
+    amount: number;
+    description: string;
+    category: string;
+    date: string;
+  }>) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
@@ -73,14 +80,14 @@
     const lastWeek = new Date(today);
     lastWeek.setDate(lastWeek.getDate() - 7);
 
-    const groups: { [key: string]: typeof transactions } = {
+    const groups: { [key: string]: typeof txList } = {
       Today: [],
       Yesterday: [],
       'This Week': [],
       Older: []
     };
 
-    transactions.forEach(t => {
+    txList.forEach(t => {
       const tDate = new Date(t.date);
       const tDay = new Date(tDate.getFullYear(), tDate.getMonth(), tDate.getDate());
 
@@ -131,10 +138,14 @@
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
-  function handleMonthChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    dispatch('monthChange', { month: target.value });
+  function handleMonthChange(event: CustomEvent) {
+    dispatch('monthChange', { month: event.detail.value });
   }
+
+  $: monthOptions = availableMonths.map(month => ({
+    value: month,
+    label: formatMonthLabel(month)
+  }));
 </script>
 
 <div class="flex h-full w-full">
@@ -146,16 +157,13 @@
       </div>
       <div class="flex items-center gap-2">
         <Calendar size={18} class="text-gray-400" />
-        <select
-          value={selectedMonth}
-          on:change={handleMonthChange}
-          class="px-4 py-2.5 bg-gray-700 border-2 border-gray-600 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-600 hover:border-gray-500 transition-all cursor-pointer shadow-lg appearance-none pr-10"
-          style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27white%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.5em 1.5em;"
-        >
-          {#each availableMonths as month}
-            <option value={month} class="bg-gray-700 text-white">{formatMonthLabel(month)}</option>
-          {/each}
-        </select>
+        <div class="min-w-[200px]">
+          <Dropdown
+            value={selectedMonth}
+            options={monthOptions}
+            on:change={handleMonthChange}
+          />
+        </div>
       </div>
     </div>
 

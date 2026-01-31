@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { Search, Plus, Download, TrendingUp, Receipt, Tag } from 'lucide-svelte';
+  import { Search, Plus, Download, TrendingUp, Receipt, Tag, Wallet } from 'lucide-svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -12,6 +12,7 @@
   const commands = [
     { id: 'add', label: 'Add Transaction', icon: Plus, action: 'add' },
     { id: 'categories', label: 'Manage Categories', icon: Tag, action: 'categories' },
+    { id: 'containers', label: 'Manage Containers', icon: Wallet, action: 'containers' },
     { id: 'export', label: 'Export to CSV', icon: Download, action: 'export' },
     { id: 'analytics', label: 'View Analytics', icon: TrendingUp, action: 'analytics' },
     { id: 'transactions', label: 'View Transactions', icon: Receipt, action: 'transactions' },
@@ -59,7 +60,7 @@
       <kbd class="px-2 py-1 text-xs bg-gray-800 text-gray-400 rounded">Esc</kbd>
     </div>
 
-    <div class="max-h-96 overflow-y-auto">
+    <div class="max-h-96 overflow-y-auto overflow-x-hidden">
       {#if filteredCommands.length === 0}
         <div class="px-4 py-8 text-center text-gray-500">
           No commands found

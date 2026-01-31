@@ -1,16 +1,23 @@
 # Spent
 
-Minimalist personal finance tracker for Linux desktop.
+Minimalist personal finance tracker for Linux desktop with cross-platform support.
 
-![Spent UI](src-tauri/icons/Media-1.png)
+![Spent UI](src-tauri/icons/Media/Media-1.png)
+
+**[View More Screenshots](src-tauri/icons/Media)**
+
+> **Note:** Version 1.0.0 is "feature-complete," but has primarily been tested on Arch Linux. If you encounter issues on other distros or OSs, please open an Issue!
 
 ## Features
 
+- **Containers**: Create separate balance containers to manage personal, business, or different accounts in complete isolation
 - Offline-first with local SQLite storage
 - Quick transaction entry (Ctrl+N)
-- Monthly balance tracking
+- Monthly balance tracking with history
 - Category-based organization
 - Dark mode interface
+- CSV export per container
+- Cross-platform: Linux (.deb, .AppImage), Windows (.exe), macOS (.app)
 
 ## Stack
 
@@ -47,14 +54,20 @@ npm run tauri build
 ## Usage
 
 - `Ctrl+N` - Add transaction
-- `Ctrl+K` - Command palette
-- Hover transaction to delete
+- `Ctrl+K` - Command palette (access all features)
+- Hover transaction to edit/delete
+- Switch between containers using the dropdown in sidebar
+- Create/manage containers via Command Palette → "Manage Containers"
 
 ## Data
 
-Stored in `~/.local/share/com.spent.app/spent.db` (Linux).
+The database is stored locally in platform-specific locations:
 
-Money stored as integers (cents) to avoid floating-point issues.
+- **Linux**: `~/.local/share/com.spent.app/spent.db`
+- **Windows**: `%APPDATA%\com.spent.app\spent.db` (typically `C:\Users\<username>\AppData\Roaming\com.spent.app\spent.db`)
+- **macOS**: `~/Library/Application Support/com.spent.app/spent.db`
+
+Money is stored as integers (cents) to avoid floating-point issues.
 
 ## License
 

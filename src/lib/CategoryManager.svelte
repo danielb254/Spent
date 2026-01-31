@@ -85,7 +85,7 @@
               type="text"
               bind:value={newCategoryName}
               placeholder="Enter category name..."
-              class="flex-1 px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 px-4 py-2 bg-gray-900 border-2 border-gray-600 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
               on:keydown={(e) => e.key === 'Enter' && handleAddCategory()}
               autofocus
             />

@@ -6,7 +6,7 @@
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { open } from '@tauri-apps/plugin-shell';
-  import { LayoutDashboard, TrendingUp, Plus, Settings, Github, Wallet } from 'lucide-svelte';
+  import { LayoutDashboard, TrendingUp, Plus, Settings as SettingsIcon, Github, Wallet } from 'lucide-svelte';
   import Overview from './lib/Overview.svelte';
   import Analytics from './lib/Analytics.svelte';
   import QuickEntry from './lib/QuickEntry.svelte';
@@ -334,7 +334,7 @@
         on:click={() => (showCommandPalette = true)}
         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium transition-all text-sm"
       >
-        <Settings size={16} />
+        <SettingsIcon size={16} />
         Commands
       </button>
       

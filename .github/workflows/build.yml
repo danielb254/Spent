@@ -122,14 +122,18 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           cd src-tauri/target/${{ matrix.target }}/release/bundle/macos
-          tar -czf spent.app.tar.gz *.app
+          if [ "${{ matrix.target }}" = "aarch64-apple-darwin" ]; then
+            tar -czf spent_aarch64.app.tar.gz *.app
+          else
+            tar -czf spent_x86_64.app.tar.gz *.app
+          fi
 
       - name: Upload macOS artifact
         if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: spent-macos-${{ matrix.target }}
-          path: src-tauri/target/${{ matrix.target }}/release/bundle/macos/spent.app.tar.gz
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz
 
   release:
     needs: build

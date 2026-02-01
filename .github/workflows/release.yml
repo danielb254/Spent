@@ -60,7 +60,10 @@ jobs:
           
           sed -i "s/pkgver=.*/pkgver=${VERSION}/" AUR/PKGBUILD-bin
           sed -i "s/_pkgrealversion=.*/_pkgrealversion=${VERSION}/" AUR/PKGBUILD-bin
-          sed -i "s/sha256sums_x86_64=.*/sha256sums_x86_64=('${DEB_SHA}')/" AUR/PKGBUILD-bin
+          sed -i "s/sha256sums_x86_64=.*/sha256sums_x86_64=('${DEB_SHA}')/" AUR/PKGBUILD-bi
+          
+          mkdir -p release-bin
+          cp AUR/PKGBUILD-bin release-bin/PKGBUILD
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
@@ -76,7 +79,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
           pkgname: spent-bin
-          pkgbuild: ./AUR/PKGBUILD-bin
+          pkgbuild: ./release-bin/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

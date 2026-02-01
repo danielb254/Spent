@@ -56,8 +56,7 @@
         "bundleMediaFramework": false
       },
       "deb": {
-        "depends": [],
-        "desktopTemplate": "spent.desktop"
+        "depends": []
       }
     },
     "windows": {

@@ -173,7 +173,9 @@
             {formatCurrency(monthlyBalance)}
           </p>
           <div class="flex items-center gap-2 mt-3">
-            {#if monthlyBalance >= 0}
+            {#if monthlyBalance === 0}
+              <span class="text-xs text-gray-500">Even steven</span>
+            {:else if monthlyBalance > 0}
               <TrendingUp size={14} class="text-green-400" />
               <span class="text-xs text-gray-500">Looking good</span>
             {:else}
@@ -192,7 +194,9 @@
             {formatCurrency(allTimeBalance)}
           </p>
           <div class="flex items-center gap-2 mt-3">
-            {#if allTimeBalance >= 0}
+            {#if allTimeBalance === 0}
+              <span class="text-xs text-gray-500">Balanced</span>
+            {:else if allTimeBalance > 0}
               <TrendingUp size={14} class="text-green-400" />
               <span class="text-xs text-gray-500">Net positive</span>
             {:else}

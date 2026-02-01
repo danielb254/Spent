@@ -20,3 +20,8 @@ const cargoTomlPath = join(rootDir, 'src-tauri', 'Cargo.toml');
 let cargoToml = readFileSync(cargoTomlPath, 'utf-8');
 cargoToml = cargoToml.replace(/^version = ".*"$/m, `version = "${version}"`);
 writeFileSync(cargoTomlPath, cargoToml);
+
+const appSveltePath = join(rootDir, 'src', 'App.svelte');
+let appSvelte = readFileSync(appSveltePath, 'utf-8');
+appSvelte = appSvelte.replace(/<span>v[\d.]+<\/span>/g, `<span>v${version}</span>`);
+writeFileSync(appSveltePath, appSvelte);

@@ -60,6 +60,7 @@ npm run tauri build
 
 ## Usage
 
+- Launch: `spent-app` (binary renamed from `spent` in v1.1.5 to avoid conflict with opensp package)
 - `Ctrl+N` - Add transaction
 - `Ctrl+K` - Command palette (access all features)
 - Hover transaction to edit/delete

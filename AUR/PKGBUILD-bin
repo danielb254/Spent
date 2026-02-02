@@ -24,7 +24,7 @@ source=("LICENSE-${pkgver}::${_urlraw}/LICENSE"
         "README-${pkgver}.md::${_urlraw}/README.md")
 source_x86_64=("${_pkgname}-${arch[0]}-${pkgver}.deb::${url}/releases/download/${_pkgvername}/spent_${_pkgrealversion}_${_barch[0]}.deb")
 sha256sums=('c4215762b499abb4cf9674a5653c08691bbed2fbcad74441971069d0364485fe'
-            '039d45f02015c1bcd91fe4f8f64afe66920c6138e79c775bdb0bf1cf3aa09543')
+            '41b3fb88556e0b6a74c57368b62611bcd8b79a64b061ddf522cb0bb78209acb8')
 sha256sums_x86_64=('SKIP')
 
 

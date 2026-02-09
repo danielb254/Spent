@@ -66,9 +66,16 @@ jobs:
           echo "Found DEB file: $DEB_FILE"
           DEB_SHA=$(sha256sum "$DEB_FILE" | cut -d' ' -f1)
           
+          LICENSE_URL="https://raw.githubusercontent.com/FrogSnot/Spent/v${VERSION}/LICENSE"
+          README_URL="https://raw.githubusercontent.com/FrogSnot/Spent/v${VERSION}/README.md"
+          LICENSE_SHA=$(curl -sL "$LICENSE_URL" | sha256sum | cut -d' ' -f1)
+          README_SHA=$(curl -sL "$README_URL" | sha256sum | cut -d' ' -f1)
+          
           sed -i "s/pkgver=.*/pkgver=${VERSION}/" AUR/PKGBUILD-bin
           sed -i "s/_pkgrealversion=.*/_pkgrealversion=${VERSION}/" AUR/PKGBUILD-bin
-          sed -i "s/sha256sums_x86_64=.*/sha256sums_x86_64=('${DEB_SHA}')/" AUR/PKGBUILD-bin
+          
+          perl -i -pe "BEGIN{undef $/;} s/sha256sums=\([^)]+\)/sha256sums=('${LICENSE_SHA}'\\n            '${README_SHA}')/smg" AUR/PKGBUILD-bin
+          perl -i -pe "s/sha256sums_x86_64=\([^)]+\)/sha256sums_x86_64=('${DEB_SHA}')/g" AUR/PKGBUILD-bin
           
           mkdir -p release-bin
           cp AUR/PKGBUILD-bin release-bin/PKGBUILD
@@ -93,6 +100,7 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update to ${{ github.ref_name }}
           ssh_keyscan_types: rsa,ecdsa,ed25519
+          force_push: true
 
       - name: Publish to AUR (spent)
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
@@ -104,3 +112,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update to ${{ github.ref_name }}
           ssh_keyscan_types: rsa,ecdsa,ed25519
+          force_push: true

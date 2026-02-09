@@ -77,6 +77,13 @@ The database is stored locally in platform-specific locations:
 
 Money is stored as integers (cents) to avoid floating-point issues.
 
+## Thank you to the amazing people that star this project!
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=FrogSnot/spent&type=date&legend=bottom-right)](https://www.star-history.com/#FrogSnot/spent&type=date&legend=bottom-right)
+
+
 ## License
 
 AGPLv3

@@ -1,23 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { fade, fly, scale } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
   import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
   import { 
     TrendingDown, 
     TrendingUp, 
     Receipt, 
-    Calendar,
-    UtensilsCrossed,
-    ShoppingBag,
-    Car,
-    Sparkles,
-    Receipt as ReceiptIcon,
-    Home,
-    Heart,
-    DollarSign,
-    Wallet,
-    Infinity
+    Calendar
   } from 'lucide-svelte';
   import Dropdown from './Dropdown.svelte';
 
@@ -41,8 +29,11 @@
 
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
+    const [selYear, selMonth] = selectedMonth.split('-').map(Number);
+    const referenceDate = new Date(selYear, selMonth - 1 + 1, 0); // last day of selected month
     const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const anchor = now < referenceDate ? now : referenceDate;
+    const diffDays = Math.floor((anchor.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
@@ -70,8 +61,11 @@
     category: string;
     date: string;
   }>) {
+    const [selYear, selMonth] = selectedMonth.split('-').map(Number);
+    const lastDayOfMonth = new Date(selYear, selMonth, 0);
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const anchor = now < lastDayOfMonth ? now : lastDayOfMonth;
+    const today = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const lastWeek = new Date(today);
@@ -119,7 +113,11 @@
   $: totalSpent = transactions.reduce((sum, t) => t.amount < 0 ? sum + Math.abs(t.amount) : sum, 0);
   $: totalIncome = transactions.reduce((sum, t) => t.amount > 0 ? sum + t.amount : sum, 0);
   $: transactionCount = transactions.length;
-  $: dailyAverage = transactionCount > 0 ? totalSpent / 30 : 0;
+  $: daysInMonth = (() => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
+  })();
+  $: dailyAverage = transactionCount > 0 ? totalSpent / daysInMonth : 0;
   $: groupedTransactions = groupTransactions(transactions);
 
   function formatMonthLabel(month: string): string {
@@ -216,7 +214,7 @@
       {#if transactions.length === 0}
         <div class="p-12 text-center">
           <div class="inline-flex p-4 bg-gray-800 rounded-full mb-4">
-            <ReceiptIcon size={32} class="text-gray-600" />
+            <Receipt size={32} class="text-gray-600" />
           </div>
           <p class="text-gray-400 text-lg font-medium mb-2">No transactions yet</p>
           <p class="text-gray-600 text-sm">Press <kbd class="px-2 py-1 bg-gray-800 rounded text-xs">Ctrl+N</kbd> to add your first one</p>

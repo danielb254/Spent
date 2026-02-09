@@ -19,6 +19,8 @@
   let isAdding = false;
   let editingId: number | null = null;
   let editingName = '';
+  let errorMessage = '';
+  let pendingDeleteContainer: Container | null = null;
 
   async function loadContainers() {
     try {
@@ -36,21 +38,25 @@
       await loadContainers();
       newContainerName = '';
       isAdding = false;
+      errorMessage = '';
     } catch (error) {
       console.error('Failed to add container:', error);
-      alert('Failed to add container. It might already exist.');
+      errorMessage = 'Failed to add container. It might already exist.';
     }
   }
 
   async function handleDeleteContainer(container: Container) {
     if (container.is_default) {
-      alert('Cannot delete the default container.');
+      errorMessage = 'Cannot delete the default container.';
       return;
     }
+    pendingDeleteContainer = container;
+  }
 
-    if (!confirm(`Delete container "${container.name}"?\n\nThis will permanently delete all transactions in this container. This action cannot be undone.`)) {
-      return;
-    }
+  async function confirmDeleteContainer() {
+    if (!pendingDeleteContainer) return;
+    const container = pendingDeleteContainer;
+    pendingDeleteContainer = null;
     
     try {
       await invoke('delete_container', { id: container.id });
@@ -58,7 +64,7 @@
       dispatch('containerDeleted', { id: container.id });
     } catch (error) {
       console.error('Failed to delete container:', error);
-      alert('Failed to delete container.');
+      errorMessage = 'Failed to delete container.';
     }
   }
 
@@ -80,7 +86,7 @@
       dispatch('containerUpdated');
     } catch (error) {
       console.error('Failed to update container:', error);
-      alert('Failed to update container name.');
+      errorMessage = 'Failed to update container name.';
       editingId = null;
     }
   }
@@ -255,3 +261,36 @@
     </div>
   </div>
 </div>
+
+{#if errorMessage}
+  <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3" in:fade={{ duration: 150 }}>
+    <span class="text-sm">{errorMessage}</span>
+    <button on:click={() => (errorMessage = '')} class="text-white/80 hover:text-white">
+      <X size={16} />
+    </button>
+  </div>
+{/if}
+
+{#if pendingDeleteContainer}
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4" in:fade={{ duration: 150 }}>
+    <div class="bg-gray-900 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl p-6 space-y-4">
+      <h3 class="text-lg font-bold text-white">Delete Container</h3>
+      <p class="text-sm text-gray-400">Delete container "{pendingDeleteContainer.name}"?</p>
+      <p class="text-xs text-red-400">This will permanently delete all transactions in this container. This action cannot be undone.</p>
+      <div class="flex gap-3 pt-2">
+        <button
+          on:click={confirmDeleteContainer}
+          class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors"
+        >
+          Delete
+        </button>
+        <button
+          on:click={() => (pendingDeleteContainer = null)}
+          class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg font-semibold transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

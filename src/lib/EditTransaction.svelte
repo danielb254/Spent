@@ -41,7 +41,7 @@
 
   async function handleSubmit() {
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount) {
+    if (isNaN(parsedAmount)) {
       return;
     }
 

@@ -59,6 +59,7 @@ export const currencyOptions = [
 
 export function formatCurrency(cents: number, settings: CurrencySettings): string {
   const dollars = Math.abs(cents) / 100;
+  const sign = cents < 0 ? '−' : '';
   
   const formatted = new Intl.NumberFormat(settings.locale, {
     minimumFractionDigits: 2,
@@ -66,8 +67,8 @@ export function formatCurrency(cents: number, settings: CurrencySettings): strin
   }).format(dollars);
   
   if (settings.position === 'before') {
-    return `${settings.symbol}${formatted}`;
+    return `${sign}${settings.symbol}${formatted}`;
   } else {
-    return `${formatted} ${settings.symbol}`;
+    return `${sign}${formatted} ${settings.symbol}`;
   }
 }

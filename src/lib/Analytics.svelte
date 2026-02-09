@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { PieChart, TrendingDown, Package } from 'lucide-svelte';
-  import { fly, fade } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
+  import { PieChart, Package } from 'lucide-svelte';
   import { currencySettings, formatCurrency as formatCurrencyHelper } from './stores';
 
   export let categoryTotals: Array<[string, number]>;

@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade, fly } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
   import { invoke } from '@tauri-apps/api/core';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
@@ -113,13 +111,18 @@
     }
   }
 
-  $: if (selectedMonth) {
+  let _lastMonth = '';
+  let _lastContainerId: number | null = null;
+
+  $: if (selectedMonth && selectedMonth !== _lastMonth) {
+    _lastMonth = selectedMonth;
     loadData();
   }
 
-  $: if (selectedContainer) {
-    loadAvailableMonths();
-    loadData();
+  $: if (selectedContainer && selectedContainer.id !== _lastContainerId) {
+    _lastContainerId = selectedContainer.id;
+    _lastMonth = '';
+    loadAvailableMonths().then(() => loadData());
   }
 
   async function handleAddTransaction(event: CustomEvent) {
@@ -137,6 +140,9 @@
       showQuickEntry = false;
     } catch (error) {
       console.error('Failed to add transaction:', error);
+      toastMessage = 'Failed to add transaction. Please try again.';
+      toastType = 'error';
+      showToast = true;
     }
   }
 
@@ -146,6 +152,9 @@
       await loadData();
     } catch (error) {
       console.error('Failed to delete transaction:', error);
+      toastMessage = 'Failed to delete transaction. Please try again.';
+      toastType = 'error';
+      showToast = true;
     }
   }
 
@@ -168,6 +177,9 @@
       editingTransaction = null;
     } catch (error) {
       console.error('Failed to update transaction:', error);
+      toastMessage = 'Failed to update transaction. Please try again.';
+      toastType = 'error';
+      showToast = true;
     }
   }
 

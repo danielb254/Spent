@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import { fade, scale, fly } from 'svelte/transition';
-  import { backOut, cubicOut } from 'svelte/easing';
+  import { fade, scale } from 'svelte/transition';
+  import { backOut } from 'svelte/easing';
   import { invoke } from '@tauri-apps/api/core';
   import { X, Plus, Trash2, Tag } from 'lucide-svelte';
 
@@ -10,6 +10,8 @@
   let categories: string[] = [];
   let newCategoryName = '';
   let isAdding = false;
+  let errorMessage = '';
+  let pendingDeleteCategory: string | null = null;
 
   const defaultCategories = ['Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities', 'Healthcare', 'Income', 'Other'];
 
@@ -30,21 +32,28 @@
       await loadCategories();
       newCategoryName = '';
       isAdding = false;
+      errorMessage = '';
     } catch (error) {
       console.error('Failed to add category:', error);
-      alert('Failed to add category. It might already exist.');
+      errorMessage = 'Failed to add category. It might already exist.';
     }
   }
 
   async function handleDeleteCategory(categoryName: string) {
-    if (!confirm(`Delete category "${categoryName}"?\n\nThis cannot be undone and will affect existing transactions with this category.`)) return;
+    pendingDeleteCategory = categoryName;
+  }
+
+  async function confirmDeleteCategory() {
+    if (!pendingDeleteCategory) return;
+    const categoryName = pendingDeleteCategory;
+    pendingDeleteCategory = null;
     
     try {
       await invoke('delete_category', { name: categoryName });
       await loadCategories();
     } catch (error) {
       console.error('Failed to delete category:', error);
-      alert('Failed to delete category. Default categories cannot be deleted.');
+      errorMessage = 'Failed to delete category. Default categories cannot be deleted.';
     }
   }
 
@@ -149,3 +158,36 @@
     </div>
   </div>
 </div>
+
+{#if errorMessage}
+  <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3" in:fade={{ duration: 150 }}>
+    <span class="text-sm">{errorMessage}</span>
+    <button on:click={() => (errorMessage = '')} class="text-white/80 hover:text-white">
+      <X size={16} />
+    </button>
+  </div>
+{/if}
+
+{#if pendingDeleteCategory}
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4" in:fade={{ duration: 150 }}>
+    <div class="bg-gray-900 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl p-6 space-y-4">
+      <h3 class="text-lg font-bold text-white">Delete Category</h3>
+      <p class="text-sm text-gray-400">Delete category "{pendingDeleteCategory}"?</p>
+      <p class="text-xs text-red-400">This cannot be undone and will affect existing transactions with this category.</p>
+      <div class="flex gap-3 pt-2">
+        <button
+          on:click={confirmDeleteCategory}
+          class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors"
+        >
+          Delete
+        </button>
+        <button
+          on:click={() => (pendingDeleteCategory = null)}
+          class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-lg font-semibold transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

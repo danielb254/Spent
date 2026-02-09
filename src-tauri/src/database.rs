@@ -118,7 +118,7 @@ impl Database {
     }
 
     pub fn add_transaction(&self, transaction: NewTransaction) -> Result<Transaction> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         
         let description = transaction.description.unwrap_or_else(|| "Untitled".to_string());
@@ -148,14 +148,21 @@ impl Database {
     }
 
     pub fn get_transactions(&self, container_id: i64, limit: Option<i64>) -> Result<Vec<Transaction>> {
-        let conn = self.conn.lock().unwrap();
-        let query = match limit {
-            Some(l) => format!("SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} ORDER BY date DESC LIMIT {}", container_id, l),
-            None => format!("SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} ORDER BY date DESC", container_id),
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
+        let (query, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = match limit {
+            Some(l) => (
+                "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = ?1 ORDER BY date DESC LIMIT ?2".to_string(),
+                vec![Box::new(container_id), Box::new(l)],
+            ),
+            None => (
+                "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = ?1 ORDER BY date DESC".to_string(),
+                vec![Box::new(container_id)],
+            ),
         };
 
         let mut stmt = conn.prepare(&query)?;
-        let transactions = stmt.query_map([], |row| {
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let transactions = stmt.query_map(params_refs.as_slice(), |row| {
             Ok(Transaction {
                 id: row.get(0)?,
                 amount: row.get(1)?,
@@ -176,7 +183,7 @@ impl Database {
         description: String,
         category: String,
     ) -> Result<Transaction> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         conn.execute(
             "UPDATE transactions SET amount = ?1, description = ?2, category = ?3 WHERE id = ?4",
@@ -202,7 +209,7 @@ impl Database {
     }
 
     pub fn get_monthly_balance(&self, container_id: i64) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let current_month = chrono::Local::now().format("%Y-%m").to_string();
         
         let balance: i64 = conn.query_row(
@@ -215,7 +222,7 @@ impl Database {
     }
 
     pub fn get_all_time_balance(&self, container_id: i64) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         let balance: i64 = conn.query_row(
             "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE container_id = ?1",
@@ -227,12 +234,14 @@ impl Database {
     }
 
     pub fn export_transactions_csv(&self, container_id: i64) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT id, amount, description, category, date FROM transactions WHERE container_id = ?1 ORDER BY date DESC"
         )?;
         
-        let mut csv = String::from("ID,Amount,Description,Category,Date\n");
+        let mut wtr = csv::Writer::from_writer(vec![]);
+        wtr.write_record(&["ID", "Amount", "Description", "Category", "Date"]).map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
+
         let rows = stmt.query_map([container_id], |row| {
             Ok((
                 row.get::<_, i64>(0)?,
@@ -246,20 +255,27 @@ impl Database {
         for row in rows {
             let (id, amount, desc, cat, date) = row?;
             let dollars = (amount as f64) / 100.0;
-            csv.push_str(&format!("{},{:.2},{},{},{}\n", id, dollars, desc, cat, date));
+            wtr.write_record(&[
+                id.to_string(),
+                format!("{:.2}", dollars),
+                desc,
+                cat,
+                date,
+            ]).map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         }
 
-        Ok(csv)
+        let csv_bytes = wtr.into_inner().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
+        String::from_utf8(csv_bytes).map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))
     }
 
     pub fn delete_transaction(&self, id: i64) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         conn.execute("DELETE FROM transactions WHERE id = ?1", [id])?;
         Ok(())
     }
 
     pub fn get_category_totals(&self, container_id: i64) -> Result<Vec<(String, i64)>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let current_month = chrono::Local::now().format("%Y-%m").to_string();
         
         let mut stmt = conn.prepare(
@@ -278,7 +294,7 @@ impl Database {
     }
 
     pub fn get_categories(&self) -> Result<Vec<String>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let mut stmt = conn.prepare("SELECT name FROM categories ORDER BY is_default DESC, name ASC")?;
         
         let categories = stmt.query_map([], |row| row.get(0))?;
@@ -286,7 +302,7 @@ impl Database {
     }
 
     pub fn add_category(&self, name: String) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         conn.execute(
             "INSERT INTO categories (name, is_default) VALUES (?1, 0)",
             [name],
@@ -295,7 +311,7 @@ impl Database {
     }
 
     pub fn delete_category(&self, name: String) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         conn.execute(
             "DELETE FROM categories WHERE name = ?1 AND is_default = 0",
             [name],
@@ -304,7 +320,7 @@ impl Database {
     }
 
     pub fn get_available_months(&self, container_id: i64) -> Result<Vec<String>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT DISTINCT strftime('%Y-%m', date) as month 
              FROM transactions 
@@ -317,7 +333,7 @@ impl Database {
     }
 
     pub fn get_balance_for_month(&self, container_id: i64, month: String) -> Result<i64> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         let balance: i64 = conn.query_row(
             "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE container_id = ?1 AND date LIKE ?2",
@@ -329,19 +345,22 @@ impl Database {
     }
 
     pub fn get_transactions_for_month(&self, container_id: i64, month: String, limit: Option<i64>) -> Result<Vec<Transaction>> {
-        let conn = self.conn.lock().unwrap();
-        let base_query = format!(
-            "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = {} AND date LIKE '{}%' ORDER BY date DESC",
-            container_id, month
-        );
-        
-        let query = match limit {
-            Some(l) => format!("{} LIMIT {}", base_query, l),
-            None => base_query,
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
+        let month_pattern = format!("{}%", month);
+        let (query, params): (&str, Vec<Box<dyn rusqlite::types::ToSql>>) = match limit {
+            Some(l) => (
+                "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = ?1 AND date LIKE ?2 ORDER BY date DESC LIMIT ?3",
+                vec![Box::new(container_id), Box::new(month_pattern.clone()), Box::new(l)],
+            ),
+            None => (
+                "SELECT id, amount, description, category, date, container_id FROM transactions WHERE container_id = ?1 AND date LIKE ?2 ORDER BY date DESC",
+                vec![Box::new(container_id), Box::new(month_pattern.clone())],
+            ),
         };
 
-        let mut stmt = conn.prepare(&query)?;
-        let transactions = stmt.query_map([], |row| {
+        let mut stmt = conn.prepare(query)?;
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let transactions = stmt.query_map(params_refs.as_slice(), |row| {
             Ok(Transaction {
                 id: row.get(0)?,
                 amount: row.get(1)?,
@@ -356,7 +375,7 @@ impl Database {
     }
 
     pub fn get_category_totals_for_month(&self, container_id: i64, month: String) -> Result<Vec<(String, i64)>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT category, SUM(amount) as total 
              FROM transactions 
@@ -373,7 +392,7 @@ impl Database {
     }
 
     pub fn get_containers(&self) -> Result<Vec<Container>> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let mut stmt = conn.prepare("SELECT id, name, created_at, is_default FROM containers ORDER BY is_default DESC, created_at ASC")?;
         
         let containers = stmt.query_map([], |row| {
@@ -389,7 +408,7 @@ impl Database {
     }
 
     pub fn add_container(&self, name: String) -> Result<Container> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         
         conn.execute(
@@ -408,7 +427,7 @@ impl Database {
     }
 
     pub fn delete_container(&self, id: i64) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         let is_default: i64 = conn.query_row(
             "SELECT is_default FROM containers WHERE id = ?1",
@@ -425,7 +444,7 @@ impl Database {
     }
 
     pub fn update_container(&self, id: i64, name: String) -> Result<Container> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         conn.execute(
             "UPDATE containers SET name = ?1 WHERE id = ?2",
@@ -582,7 +601,7 @@ impl Database {
         category: String,
         date: String,
     ) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock().map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))?;
         
         conn.execute(
             "INSERT INTO transactions (amount, description, category, date, container_id) VALUES (?1, ?2, ?3, ?4, ?5)",

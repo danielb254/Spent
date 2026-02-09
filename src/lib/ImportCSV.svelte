@@ -47,7 +47,7 @@
       }
     } catch (error) {
       console.error('Failed to read file:', error);
-      alert('Failed to read CSV file. Please try again.');
+      step = 'upload';
     }
   }
 

